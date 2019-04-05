@@ -8,7 +8,7 @@ import sys
 def receive_multicast():
 
     multicast_group = '224.3.29.71'
-    server_address = ('', 10001)
+    server_address = ('', 10000)
 
     # Create the socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -33,7 +33,7 @@ def receive_multicast():
 
 def multicast():
     message = input('Type in the message to send')
-    multicast_group = ('224.3.29.71', 10000)
+    multicast_group = ('224.3.29.71', 10001)
     # Create the datagram socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Set a timeout so the socket does not block indefinitely when trying
