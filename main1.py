@@ -6,7 +6,6 @@ import sys
 
 # Define a function for the thread
 def receive_multicast(port):
-
     multicast_group = '224.3.29.71'
     server_address = ('', port) #listening port
 
@@ -31,7 +30,7 @@ def receive_multicast(port):
         print (sys.stderr, 'sending acknowledgement to', address)
         sock.sendto('ack'.encode(), address)
 def multicast(port):
-
+    s = 0
     # Create the datagram socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Set a timeout so the socket does not block indefinitely when trying
@@ -51,6 +50,8 @@ def multicast(port):
                     # Send data to the multicast group
                     print(sys.stderr, 'sending' ,message)
                     sent = sock.sendto(message.encode(), multicast_group)
+            s+=1
+            print('The sequence no. is:',s)
             # Look for responses from all recipients
             while True:
                 print(sys.stderr, 'waiting to receive')
