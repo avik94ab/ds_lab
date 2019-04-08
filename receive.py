@@ -27,3 +27,4 @@ def receive_multicast():
 
         print (sys.stderr, 'sending acknowledgement to', address)
         sock.sendto('ack'.encode(), address)
+receive_multicast()

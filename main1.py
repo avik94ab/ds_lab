@@ -5,10 +5,10 @@ import struct
 import sys
 
 # Define a function for the thread
-def receive_multicast():
+def receive_multicast(port):
 
     multicast_group = '224.3.29.71'
-    server_address = ('', 10000)
+    server_address = ('', port) #listening port
 
     # Create the socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -30,45 +30,51 @@ def receive_multicast():
 
         print (sys.stderr, 'sending acknowledgement to', address)
         sock.sendto('ack'.encode(), address)
+def multicast(port):
 
-def multicast():
-    message = input('Type in the message to send')
-    multicast_group = ('224.3.29.71', 10001)
     # Create the datagram socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Set a timeout so the socket does not block indefinitely when trying
     # to receive data.
-    sock.settimeout(100000)
+    sock.settimeout(0.2)
     # Set the time-to-live for messages to 1 so they do not go past the
     # local network segment.
     ttl = struct.pack('b', 1)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
     try:
-        # Send data to the multicast group
-        print(sys.stderr, 'sending' ,message)
-        sent = sock.sendto(message.encode(), multicast_group)
-        # Look for responses from all recipients
         while True:
-            print(sys.stderr, 'waiting to receive')
-            try:
-                data, server = sock.recvfrom(16)
-            except socket.timeout:
-                print(sys.stderr, 'timed out, no more responses')
-                break
-            else:
-                print(sys.stderr, 'received from', (data, server))
+            message = input('Type in the message to send')
+
+            for p in [10001,10002,10003,10004]:
+                if p !=port:
+                    multicast_group = ('224.3.29.71', p)
+                    # Send data to the multicast group
+                    print(sys.stderr, 'sending' ,message)
+                    sent = sock.sendto(message.encode(), multicast_group)
+            # Look for responses from all recipients
+            while True:
+                print(sys.stderr, 'waiting to receive')
+                try:
+                    data, server = sock.recvfrom(16)
+                except socket.timeout:
+                    print(sys.stderr, 'timed out, no more responses')
+                    break
+                else:
+                    print(sys.stderr, 'received from', (data, server))
     finally:
         print(sys.stderr, 'closing socket')
         sock.close()
 
+if __name__== "__main__":
 
-# Create two threads as follows
-try:
-   _thread.start_new_thread(multicast,())
-   _thread.start_new_thread(receive_multicast,())
+    port = int(sys.argv[1]) # listening port
 
-except:
-   print ("Error: unable to start thread")
+    # Create two threads as follows
+    _thread.start_new_thread(multicast,(port,))
+    receive_multicast(port)
 
-while 1:
-   pass
+
+
+
+    while 1:
+       pass
