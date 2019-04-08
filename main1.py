@@ -5,8 +5,12 @@ import struct
 import sys
 import random
 
+R = {10001:-1,10002:-1,10003:-1,10004:-1}
+hold_back = []
 # Define a function for the thread
 def receive_multicast(port):
+    global R
+    global hold_back
     multicast_group = '224.3.29.71'
     server_address = ('', port) #listening port
 
@@ -23,13 +27,40 @@ def receive_multicast(port):
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
     while True:
-        print(sys.stderr, '\nwaiting to receive message')
+        print( '\nwaiting to receive message')
         data, address = sock.recvfrom(1024)
-        print(sys.stderr,'received  bytes from ',len(data), address)
-        print(sys.stderr, data)
+        data = data.decode("utf-8")
+        txt = data.split(":")
+        data = ":".join(txt[2:])
+        s = int(txt[1])
+        p = int(txt[0])
+        print(s)
+        print( data)
+        if (s == R[p]+1):
+            print('received  bytes from ',data, address)
+            R[p] += 1
+            print ( 'sending acknowledgement to', address)
+            hold_back = sorted (hold_back, key = lambda x:x[0])
+            print ("-------->",hold_back)
+            counter = R[p] +1
+            list = []
+            for i in hold_back:
+                if i[0] == counter:
+                    print(i[1])
+                    list.append(i)
+                    R[p] += 1
+                    counter += 1
+            for j in list:
+                hold_back.remove(j)
 
-        print (sys.stderr, 'sending acknowledgement to', address)
-        sock.sendto('ack'.encode(), address)
+            sock.sendto('ack'.encode(), address)
+        elif s <= R[p]:
+            print("message is discarded!")
+        elif s > R[p] +1:
+            hold_back.append((s,data))
+            print ("loook at this!:",hold_back)
+
+
 
 def delay_multicast(sock,message, multicast_group):
     print('Sleep start')
@@ -58,23 +89,23 @@ def multicast(port):
                 if p !=port:
                     multicast_group = ('224.3.29.71', p)
                     # Send data to the multicast group
-                    print(sys.stderr, 'sending' ,message)
-                    _thread.start_new_thread(delay_multicast,(sock,message,multicast_group))
+                    print( 'sending' ,message)
+                    _thread.start_new_thread(delay_multicast,(sock,str(port)+":"+str(s)+":"+message,multicast_group))
 
             s+=1
             print('The sequence no. is:',s)
             # Look for responses from all recipients
             while True:
-                print(sys.stderr, 'waiting to receive')
+                print( 'waiting to receive')
                 try:
                     data, server = sock.recvfrom(16)
                 except socket.timeout:
-                    print(sys.stderr, 'timed out, no more responses')
+                    print('timed out, no more responses')
                     break
                 else:
-                    print(sys.stderr, 'received from', (data, server))
+                    print( 'received from', (data, server))
     finally:
-        print(sys.stderr, 'closing socket')
+        print( 'closing socket')
         sock.close()
 
 if __name__== "__main__":
