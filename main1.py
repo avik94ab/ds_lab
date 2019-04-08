@@ -3,6 +3,7 @@ import time
 import socket
 import struct
 import sys
+import random
 
 # Define a function for the thread
 def receive_multicast(port):
@@ -29,6 +30,15 @@ def receive_multicast(port):
 
         print (sys.stderr, 'sending acknowledgement to', address)
         sock.sendto('ack'.encode(), address)
+
+def delay_multicast(sock,message, multicast_group):
+    print('Sleep start')
+    v = random.randint(2,10)
+    print(v)
+    time.sleep(v)
+    sent = sock.sendto(message.encode(), multicast_group)
+
+
 def multicast(port):
     s = 0
     # Create the datagram socket
@@ -49,7 +59,8 @@ def multicast(port):
                     multicast_group = ('224.3.29.71', p)
                     # Send data to the multicast group
                     print(sys.stderr, 'sending' ,message)
-                    sent = sock.sendto(message.encode(), multicast_group)
+                    _thread.start_new_thread(delay_multicast,(sock,message,multicast_group))
+
             s+=1
             print('The sequence no. is:',s)
             # Look for responses from all recipients
