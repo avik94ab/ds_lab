@@ -5,11 +5,11 @@ import struct
 import sys
 import random
 
-R = {10001:-1,10002:-1,10003:-1,10004:-1}
+VC = [0,0,0,0]
 hold_back = []
 # Define a function for the thread
 def receive_multicast(port):
-    global R
+    global VC
     global hold_back
     multicast_group = '224.3.29.71'
     server_address = ('', port) #listening port
@@ -32,21 +32,43 @@ def receive_multicast(port):
         data = data.decode("utf-8")
         txt = data.split(":")
         data = ":".join(txt[2:])
-        s = int(txt[1])
+        s = txt[1]
+        s = s[1:-1]
+        s = s.split(",")
+        for i in range(len(s)):
+            s[i] = int(s[i])
         p = int(txt[0])
-        print(s)
-        print( data)
+        for i in range(4):
+            if s[i] > VC[i]:
+                VC[i] = s[i]
+        print("VC:",VC)
+        print("s:",s)
+        #print( data)
+        hold_back.append((s,p,data))
+        hold_back = sorted (hold_back, key = lambda x:x[0])
+        for i in hold_back:
+            flag = 0
+            k = [10001,10002,10003,10004]
+            k.remove(i[1])
+            for j in k:
+                if i[0][j-10001] > VC[j-10001]:
+                    flag = 1
+            if (i[0][i[1]-10001] == VC[i[1]-10001]+1) and flag == 0:
+                print ('received  bytes from ',i[2],address)
+                VC[i[1]-10001]= VC[i[1]-10001]+1
+
+        '''
         if (s == R[p]+1):
             print('received  bytes from ',data, address)
             R[p] += 1
-            print ( 'sending acknowledgement to', address)
+            #print ( 'sending acknowledgement to', address)
             hold_back = sorted (hold_back, key = lambda x:x[0])
-            print ("-------->",hold_back)
+            #print ("-------->",hold_back)
             counter = R[p] +1
             list = []
             for i in hold_back:
                 if i[0] == counter:
-                    print(i[1])
+                    print('received  bytes from ',i[1],address)
                     list.append(i)
                     R[p] += 1
                     counter += 1
@@ -58,8 +80,8 @@ def receive_multicast(port):
             print("message is discarded!")
         elif s > R[p] +1:
             hold_back.append((s,data))
-            print ("loook at this!:",hold_back)
-
+            #print ("loook at this!:",hold_back)
+'''
 
 
 def delay_multicast(sock,message, multicast_group):
@@ -71,7 +93,8 @@ def delay_multicast(sock,message, multicast_group):
 
 
 def multicast(port):
-    s = 0
+    global VC
+    #s = [0,0,0,0]
     # Create the datagram socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Set a timeout so the socket does not block indefinitely when trying
@@ -84,16 +107,17 @@ def multicast(port):
     try:
         while True:
             message = input('Type in the message to send')
-
+            #s[port - 10001]+=1
+            VC[port-10001] +=1
             for p in [10001,10002,10003,10004]:
                 if p !=port:
                     multicast_group = ('224.3.29.71', p)
                     # Send data to the multicast group
                     print( 'sending' ,message)
-                    _thread.start_new_thread(delay_multicast,(sock,str(port)+":"+str(s)+":"+message,multicast_group))
+                    _thread.start_new_thread(delay_multicast,(sock,str(port)+":"+str(VC)+":"+message,multicast_group))
 
-            s+=1
-            print('The sequence no. is:',s)
+
+            print('The sequence no. is:',VC[port-10001])
             # Look for responses from all recipients
             while True:
                 print( 'waiting to receive')
